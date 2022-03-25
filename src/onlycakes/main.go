@@ -26,7 +26,7 @@ var toppingOptions = []models.Option{
 	{Id: 0, Name: "None", Price: 0.00},
 }
 
-var orderedItems = []models.Item{}
+var order = models.Order{}
 
 func main() {
 	fmt.Println("\nWelcome to OnlyCakes!")
@@ -83,9 +83,9 @@ func handleOrder() {
 	fmt.Scan(&selectedToppingFlavorId)
 
 	// Validate user input
-	isValid := validateUserInput(selectedCakeOptionId, selectedCakeFlavorId, selectedToppingFlavorId)
+	isValid, errorMessage := validateUserInput(selectedCakeOptionId, selectedCakeFlavorId, selectedToppingFlavorId)
 	if !isValid {
-		fmt.Println("\nInvalid option")
+		fmt.Printf("\n%s\n", errorMessage)
 		return
 	}
 
@@ -108,28 +108,31 @@ func handleOrder() {
 
 	fmt.Printf("\n%s\n", getItemDescription(newItem))
 
-	orderedItems = append(orderedItems, newItem)
+	order.AddItem(newItem)
 
-	fmt.Printf("\nItem Total: $%.2f\n", total)
-	fmt.Printf("\nTotal Items: %d\n", len(orderedItems))
-	fmt.Printf("Order Total: $%.2f\n", getOrderTotal())
+	fmt.Printf("\nItem Total: $%.2f\n", newItem.Total)
+	fmt.Printf("\nTotal Items: %d\n", len(order.Items))
+	fmt.Printf("Order Total: $%.2f\n", order.Total)
 }
 
-func getOrderTotal() float32 {
-	var total float32
-	for _, item := range orderedItems {
-		total += item.Total
-	}
-
-	return total
+func getItemDescription(item models.Item) string {
+	return fmt.Sprintf("%s %s with %s frosting", item.CakeFlavor.Name, item.CakeType.Name, item.ToppingFlavor.Name)
 }
 
-func validateUserInput(cakeOption uint8, cakeFlavor uint8, toppingFlavor uint8) bool {
+func validateUserInput(cakeOption uint8, cakeFlavor uint8, toppingFlavor uint8) (bool, string) {
 	if cakeOption-1 < 0 || (int)(cakeOption-1) > len(cakes)-1 {
-		return false
+		return false, "Invalid cake option."
 	}
 
-	return true
+	if cakeFlavor-1 < 0 || (int)(cakeFlavor-1) > len(cakeFlavorOptions)-1 {
+		return false, "Invalid cake flavor option."
+	}
+
+	if toppingFlavor-1 < 0 || (int)(toppingFlavor-1) > len(toppingOptions)-1 {
+		return false, "Invalid topping option."
+	}
+
+	return true, ""
 }
 
 func printCustomMenu(options []models.Option) {
@@ -139,18 +142,14 @@ func printCustomMenu(options []models.Option) {
 	}
 }
 
-func getItemDescription(item models.Item) string {
-	return fmt.Sprintf("%s %s with %s frosting", item.CakeFlavor.Name, item.CakeType.Name, item.ToppingFlavor.Name)
-}
-
 func printOrder() {
 	fmt.Println("\n========================================================++")
 	fmt.Println("\nYour current order:")
-	for i, item := range orderedItems {
+	for i, item := range order.Items {
 		fmt.Printf("\nItem %d: %s $%.2f", i+1, getItemDescription(item), item.Total)
 	}
 
-	fmt.Printf("\n\nOrder Total: %.2f\n", getOrderTotal())
+	fmt.Printf("\n\nOrder Total: %.2f\n", order.Total)
 	fmt.Println("\n========================================================++")
 }
 
@@ -158,7 +157,7 @@ func printOptionMenu() {
 	fmt.Println("\nEnter an option from the menu to get started.")
 	fmt.Println("1. View the menu")
 
-	if len(orderedItems) == 0 {
+	if len(order.Items) == 0 {
 		fmt.Println("2. Start an order")
 	} else {
 		fmt.Println("2. Add Item")

@@ -12,3 +12,20 @@ type Item struct {
 	ToppingFlavor Option
 	Total         float32
 }
+
+type Order struct {
+	Items []Item
+	Total float32
+}
+
+func (o *Order) AddItem(item Item) {
+	o.Items = append(o.Items, item)
+
+	o.calcOrderTotal()
+}
+
+func (o *Order) calcOrderTotal() {
+	for _, item := range o.Items {
+		o.Total += item.Total
+	}
+}
